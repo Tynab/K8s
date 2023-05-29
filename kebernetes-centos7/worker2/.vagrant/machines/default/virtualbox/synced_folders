@@ -1,0 +1,1 @@
+{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"D:/Project/Kubernetes/kebernetes-centos7/worker2","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}

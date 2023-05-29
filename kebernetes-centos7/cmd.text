@@ -1,0 +1,48 @@
+(required)
+Vagrant
+VirtualBox
+
+kubectl cluster-info
+kubectl get nodes
+kubectl get pods -A
+
+chmod +x install-docker-kube.sh (Linux)
+icacls install-docker-kube.sh /grant Everyone:F (Windows)
+
+vagrant up (all)
+
+ssh root@172.16.10.100 (del C:\Users\yamia\.ssh\known_hosts)
+
+(root@master)
+yum install -y epel-release
+yum install -y yum-utils
+yum install -y containerd.io
+rm /etc/containerd/config.toml
+systemctl restart containerd
+kubeadm init --apiserver-advertise-address=172.16.10.100 --pod-network-cidr=192.168.0.0/16 (kubeadm reset)
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/custom-resources.yaml
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+ssh root@172.16.10.101
+
+(root@worker1)
+yum install -y epel-release
+yum install -y yum-utils
+yum install -y containerd.io
+rm /etc/containerd/config.toml
+systemctl restart containerd
+{kubeadm join 10.0.2.15:6443 --token agdhom.jg0paiclor7lf8xq --discovery-token-ca-cert-hash sha256:cf6f599e73d63ef0bf579a119a43bc8bd2fde52825dbe93587f0ab108d6c9e5b}
+ 
+ssh root@172.16.10.102
+
+(root@worker2)
+yum install -y epel-release
+yum install -y yum-utils
+yum install -y containerd.io
+rm /etc/containerd/config.toml
+systemctl restart containerd
+{kubeadm join 10.0.2.15:6443 --token agdhom.jg0paiclor7lf8xq --discovery-token-ca-cert-hash sha256:cf6f599e73d63ef0bf579a119a43bc8bd2fde52825dbe93587f0ab108d6c9e5b}
