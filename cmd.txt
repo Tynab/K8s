@@ -1,0 +1,58 @@
+[Terminal (kebernetes-centos7)]
+icacls install-docker-kube.sh /grant Everyone:F
+
+[Terminal (master / worker1 / worker2)]
+vagrant up
+
+[Terminal]
+(del C:\Users\yamia\.ssh\known_hosts)
+ssh root@172.16.10.100
+
+[root@master]
+yum install -y containerd.io
+rm /etc/containerd/config.toml
+systemctl restart containerd
+(kubeadm reset)
+kubeadm init --apiserver-advertise-address=172.16.10.100 --pod-network-cidr=10.244.0.0/16
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/tigera-operator.yaml
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+kubectl get nodes
+kubectl get pods -A
+
+[Terminal]
+ssh root@172.16.10.101
+ssh root@172.16.10.102
+
+[root@worker1 / root@worker2]
+yum install -y containerd.io
+rm /etc/containerd/config.toml
+systemctl restart containerd
+(kubeadm reset)
+{kubeadm join 172.16.10.100:6443 --token <token>}
+
+[Terminal]
+(rmdir /s /q .kube)
+mkdir .kube
+scp root@172.16.10.100:/etc/kubernetes/admin.conf %USERPROFILE%\.kube\config-mycluster
+cd .kube
+code config-mycluster
+set KUBECONFIG=%USERPROFILE%\.kube\config;%USERPROFILE%\.kube\config-mycluster
+kubectl config view --flatten > %USERPROFILE%\.kube\config_temp
+move config_temp config
+kubectl config get-contexts
+kubectl config use-context kubernetes-admin@kubernetes
+
+[Terminal (dashboard)]
+kubectl apply -f dashboard-v2-beta6.yaml
+icacls "certs" /grant:r "Everyone:(OI)(CI)F" /T
+docker build -t myopenssl -f Dockerfile .
+docker run --rm -v ${PWD}/certs:/certs/ myopenssl req -nodes -newkey rsa:2048 -keyout /certs/dashboard.key -out /certs/dashboard.csr -subj "/C=/ST=/L=/O=/OU=/CN=kubernetes-dashboard"
+docker run --rm -v ${PWD}/certs:/certs/ myopenssl x509 -req -sha256 -days 365 -in /certs/dashboard.csr -signkey /certs/dashboard.key -out /certs/dashboard.crt
+kubectl create secret generic kubernetes-dashboard-certs --from-file=certs -n kubernetes-dashboard
+kubectl get po -n kubernetes-dashboard
+kubectl apply -f admin-user.yaml
+kubectl -n kubernetes-dashboard create token admin-user
+{eyJhbGciOiJSUzI1NiIsImtpZCI6IkdSMlhXYW5MNmJJcVN3OXowSTdBTXVwZGJ3RnJISjVHUFFsSzRLeGxkbkUifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNjg1OTAyOTI1LCJpYXQiOjE2ODU4OTkzMjUsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJhZG1pbi11c2VyIiwidWlkIjoiMTlkYmYyZmYtMWNmNy00MjQ1LWJhMTQtZjExNjAxNGI4YjE3In19LCJuYmYiOjE2ODU4OTkzMjUsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlcm5ldGVzLWRhc2hib2FyZDphZG1pbi11c2VyIn0.MNS2tja0jpnfVzQZMKxlW3aO0L1hgTwAE1_kVWMHS7BeoZ0ZNsrwJF9D_LUVMJYxuOLL1urYspgjXPXMsPVHRwzAUQWzCQjA8gCt8NWNB9LA9oEjYKCMTMlxHUb_NVl6zCilFV07YU6LN0zXyXTRGrpuPYCM5voR45Ip86GDSro_O8_EOCSrpoBNovNBC4w5KUIjZwe0bSG0bWx0NdoyF8ipCx4vQ1Y9tZa1v9mH0mUkycSHsZ8GHYvxnMDZ81d857sB6kkfASOOd2OV1xYIBk9DPmyzRitOp9UynT34c4WF7hzsDlYcyv9xXEP7Ms2rcD2YQDwADjcmsYOIwwJ-6g}
