@@ -57,3 +57,4 @@ build-iPhoneSimulator/
 
 ### Vagrant ###
 .vagrant/
+*/.vagrant/
