@@ -1,1 +1,0 @@
-{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"D:/Project/K8s/kebernetes-centos7/master","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}
