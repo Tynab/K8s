@@ -1,2 +1,2 @@
-# K8s
- Kubernetes
+# K8S
+ Kubernetes.
